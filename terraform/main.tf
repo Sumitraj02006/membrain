@@ -70,8 +70,8 @@ resource "alicloud_instance" "ecs" {
 resource "alicloud_db_instance" "rds" {
   engine           = "PostgreSQL"
   engine_version   = "16.0"
-  db_instance_class = "pg.x8.medium.2c"
-  db_instance_storage = 50
+  instance_type    = "pg.x8.medium.2c"
+  instance_storage = 50
   instance_name    = "membrain-postgresql-rds"
   vswitch_id       = alicloud_vswitch.vswitch.id
   security_ips     = ["0.0.0.0/0"]
