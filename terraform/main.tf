@@ -77,12 +77,12 @@ resource "alicloud_db_instance" "rds" {
   security_ips     = ["0.0.0.0/0"]
 }
 
-# 5. Alibaba ElastiCache Redis 7.2 (Cache)
+# 5. Alibaba ElastiCache Redis 7.0 (Cache)
 resource "alicloud_kvstore_instance" "redis" {
   db_instance_name  = "membrain-redis-elasticache"
   vswitch_id        = alicloud_vswitch.vswitch.id
   zone_id           = var.availability_zone
-  engine_version    = "7.2"
+  engine_version    = "7.0"
   instance_class    = "redis.logic.sharding.2g.8db.0connection"
   security_ips      = ["0.0.0.0/0"]
 }
