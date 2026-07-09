@@ -1,0 +1,102 @@
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+model User {
+  id           String               @id @default(cuid())
+  email        String               @unique
+  passwordHash String
+  profile      UserProfile?
+  memories     Memory[]
+  checkpoints  ForgettingCheckpoint[]
+  createdAt    DateTime             @default(now())
+}
+
+model UserProfile {
+  id              String @id @default(cuid())
+  userId          String @unique
+  user            User   @relation(fields: [userId], references: [id])
+  domain          String @default("general") // "trading" | "coding" | "general"
+  lambdaDecay     Float  @default(0.01) // λ in TID formula
+  forgetThreshold Float  @default(0.15) // below = forgetting candidate
+  alphaWeight     Float  @default(0.25) // α: recency weight
+  betaWeight      Float  @default(0.35) // β: temporal decay weight
+  gammaWeight     Float  @default(0.30) // γ: goal-relevance weight
+  deltaWeight     Float  @default(0.10) // δ: noise penalty weight
+}
+
+model Memory {
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id])
+  content        String
+  contentTokens  Int
+  embedding      Unsupported("vector(1536)")? // pgvector
+  embeddingJson  String?
+  tidScore       Float           @default(1.0)
+  recencyScore   Float           @default(1.0)
+  goalScore      Float           @default(0.5)
+  noiseScore     Float           @default(0.0)
+  accessCount    Int             @default(0)
+  lastAccessedAt DateTime        @default(now())
+  sessionId      String?
+  tags           String[]
+  status         MemoryStatus    @default(ACTIVE)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  obituary       MemoryObituary?
+}
+
+enum MemoryStatus {
+  ACTIVE
+  PENDING_DELETION
+  DELETED
+}
+
+model MemoryObituary {
+  id               String   @id @default(cuid())
+  memoryId         String   @unique
+  memory           Memory   @relation(fields: [memoryId], references: [id])
+  summary          String // Qwen-Max generated 1-sentence summary
+  originalTokens   Int
+  summaryTokens    Int
+  compressionRatio Float
+  ossKey           String? // Alibaba OSS object key
+  deletedAt        DateTime @default(now())
+}
+
+model ForgettingCheckpoint {
+  id         String             @id @default(cuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id])
+  proposals  ForgettingProposal[]
+  status     CheckpointStatus   @default(PENDING)
+  expiresAt  DateTime
+  resolvedAt DateTime?
+  createdAt  DateTime           @default(now())
+}
+
+enum CheckpointStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+model ForgettingProposal {
+  id           String               @id @default(cuid())
+  checkpointId String
+  checkpoint   ForgettingCheckpoint @relation(fields: [checkpointId], references: [id])
+  memoryId     String
+  tidScore     Float
+  reason       String // "temporal_decay" | "goal_mismatch" | "noise_high"
+  approved     Boolean?
+  decidedAt    DateTime?
+}

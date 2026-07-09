@@ -1,0 +1,6 @@
+{
+  "name": "MemBrain",
+  "description": "Strategic Collective Forgetting Agent with Temporal Importance Decay (TID) engine and Human-in-the-Loop memory management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

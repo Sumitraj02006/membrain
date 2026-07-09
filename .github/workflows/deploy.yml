@@ -1,0 +1,54 @@
+name: CD Deploy Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout codebase
+        uses: actions/checkout@v4
+
+      # 1. Login to Alibaba Cloud Container Registry (ACR)
+      - name: Log in to Alibaba Cloud ACR
+        uses: aliyun/acr-login@v1
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      # 2. Build and Push Docker image
+      - name: Build & Push Docker image
+        run: |
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/membrain/backend:latest -f packages/backend/Dockerfile .
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/membrain/backend:latest
+
+      # 3. Remote deploy via SSH
+      - name: SSH Deploy to ECS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ubuntu
+          key: ${{ secrets.ECS_SSH_KEY }}
+          script: |
+            # Pull latest docker image from Alibaba Cloud ACR
+            docker login --username=${{ secrets.ACR_USERNAME }} --password=${{ secrets.ACR_PASSWORD }} ${{ secrets.ACR_LOGIN_SERVER }}
+            docker pull ${{ secrets.ACR_LOGIN_SERVER }}/membrain/backend:latest
+            
+            # Spin up new containers
+            docker stop membrain-app || true
+            docker rm membrain-app || true
+            
+            docker run -d \
+              --name membrain-app \
+              -p 3001:3001 \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              -e REDIS_URL="${{ secrets.REDIS_URL }}" \
+              -e QWEN_API_KEY="${{ secrets.QWEN_API_KEY }}" \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              ${{ secrets.ACR_LOGIN_SERVER }}/membrain/backend:latest
+              
+            # Clean up stale images
+            docker image prune -f
