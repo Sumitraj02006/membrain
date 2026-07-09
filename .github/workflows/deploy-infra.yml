@@ -1,0 +1,31 @@
+name: Deploy Infrastructure
+
+on:
+  workflow_dispatch: # Allows manual triggering from the GitHub Actions UI
+
+jobs:
+  terraform:
+    name: Provision Alibaba Cloud Resources
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+        env:
+          ALICLOUD_ACCESS_KEY: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
+          ALICLOUD_SECRET_KEY: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
+
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: terraform apply -auto-approve
+        env:
+          ALICLOUD_ACCESS_KEY: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
+          ALICLOUD_SECRET_KEY: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}

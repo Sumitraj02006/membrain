@@ -128,13 +128,20 @@ router.post("/chat", authenticateToken, validateRequest(chatSchema), async (req:
     const obituaryContextPrefix = matchedObituaries.map(o => `[Outdated Context Summary]: ${o.summary}`).join("\n");
     const systemPromptModifier = obituaryContextPrefix ? `${obituaryContextPrefix}\n\n` : "";
 
-    // 4. Generate Chat Response using Qwen-Max
-    const { text: chatReply, tokensUsed: chatTokens } = await AgentService.generateChatResponse(
-      promptContent(message, systemPromptModifier),
-      [], // Session history fetched on frontend or passed
-      retrievedContexts
-    );
-    await recordTokenUsage(chatTokens, userId);
+    // 4. Generate Chat Response and Analyze Memory Metrics in Parallel using Promise.all
+    const [chatResult, metricsResult] = await Promise.all([
+      AgentService.generateChatResponse(
+        promptContent(message, systemPromptModifier),
+        [], // Session history fetched on frontend or passed
+        retrievedContexts
+      ),
+      AgentService.analyzeMemoryMetrics(message)
+    ]);
+
+    const { text: chatReply, tokensUsed: chatTokens } = chatResult;
+    const { goalRelevance, noiseScore, reason: metricReason, tokensUsed: metricsTokens } = metricsResult;
+
+    await recordTokenUsage(chatTokens + metricsTokens, userId);
 
     // Save Chat Messages history to Redis cache
     const chatMsgKey = `membrain:chat:${userId}:${activeSessionId}`;
@@ -147,10 +154,6 @@ router.post("/chat", authenticateToken, validateRequest(chatSchema), async (req:
     historyList.push(userMsg);
     historyList.push(assistantMsg);
     await redis.set(chatMsgKey, JSON.stringify(historyList));
-
-    // 5. Store current thought as new Memory
-    const { goalRelevance, noiseScore, reason: metricReason, tokensUsed: metricsTokens } = await AgentService.analyzeMemoryMetrics(message);
-    await recordTokenUsage(metricsTokens, userId);
 
     // Calculate initial TID Score
     const alpha = 0.25;

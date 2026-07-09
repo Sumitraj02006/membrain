@@ -13,6 +13,7 @@ export default defineConfig(() => {
     },
     server: {
       port: 5173,
+      allowedHosts: true,
       proxy: {
         '/api': {
           target: 'http://localhost:3001',
@@ -26,6 +27,21 @@ export default defineConfig(() => {
       },
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    },
+    preview: {
+      port: 4173,
+      allowedHosts: true,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+        },
+        '/socket.io': {
+          target: 'http://localhost:3001',
+          ws: true,
+          changeOrigin: true,
+        },
+      },
     },
   };
 });
