@@ -128,20 +128,14 @@ router.post("/chat", authenticateToken, validateRequest(chatSchema), async (req:
     const obituaryContextPrefix = matchedObituaries.map(o => `[Outdated Context Summary]: ${o.summary}`).join("\n");
     const systemPromptModifier = obituaryContextPrefix ? `${obituaryContextPrefix}\n\n` : "";
 
-    // 4. Generate Chat Response and Analyze Memory Metrics in Parallel using Promise.all
-    const [chatResult, metricsResult] = await Promise.all([
-      AgentService.generateChatResponse(
-        promptContent(message, systemPromptModifier),
-        [], // Session history fetched on frontend or passed
-        retrievedContexts
-      ),
-      AgentService.analyzeMemoryMetrics(message)
-    ]);
+    // 4. Generate Chat Response synchronously
+    const chatResult = await AgentService.generateChatResponse(
+      promptContent(message, systemPromptModifier),
+      [], // Session history fetched on frontend or passed
+      retrievedContexts
+    );
 
     const { text: chatReply, tokensUsed: chatTokens } = chatResult;
-    const { goalRelevance, noiseScore, reason: metricReason, tokensUsed: metricsTokens } = metricsResult;
-
-    await recordTokenUsage(chatTokens + metricsTokens, userId);
 
     // Save Chat Messages history to Redis cache
     const chatMsgKey = `membrain:chat:${userId}:${activeSessionId}`;
@@ -155,44 +149,29 @@ router.post("/chat", authenticateToken, validateRequest(chatSchema), async (req:
     historyList.push(assistantMsg);
     await redis.set(chatMsgKey, JSON.stringify(historyList));
 
-    // Calculate initial TID Score
-    const alpha = 0.25;
-    const beta = 0.35;
-    const gamma = 0.30;
-    const delta = 0.10;
-    const rawTid = (alpha * 1.0) + (beta * 1.0) + (gamma * goalRelevance) - (delta * noiseScore);
-    const initialTid = Math.max(0, Math.min(1.0, rawTid));
+    // Respond immediately to the frontend
+    res.json({
+      sessionId: activeSessionId,
+      reply: chatReply,
+      tokensUsed: chatTokens
+    });
 
-    // Save memory structure
-    let newMem: any;
-    try {
-      newMem = await prisma.memory.create({
-        data: {
-          userId,
-          content: message,
-          contentTokens: Math.ceil(message.length / 4),
-          tidScore: initialTid,
-          recencyScore: 1.0,
-          goalScore: goalRelevance,
-          noiseScore: noiseScore,
-          accessCount: 1,
-          sessionId: activeSessionId,
-          // Storing embedding JSON for offline fallbacks
-          embeddingJson: JSON.stringify(textEmbedding)
-        }
-      });
-      
-      // Attempt raw pgvector update
-      const vectorString = `[${textEmbedding.join(",")}]`;
-      await prisma.$executeRawUnsafe(`
-        UPDATE "Memory"
-        SET embedding = '${vectorString}'::vector
-        WHERE id = '${newMem.id}'
-      `);
-    } catch (e) {
-      // Offline mock fallback if pgvector extension is missing
-      if (!newMem) {
-        newMem = await prisma.memory.create({
+    // Run database memory persistence and metric analysis in the background
+    setTimeout(async () => {
+      try {
+        const metricsResult = await AgentService.analyzeMemoryMetrics(message);
+        const { goalRelevance, noiseScore, tokensUsed: metricsTokens } = metricsResult;
+        
+        await recordTokenUsage(chatTokens + metricsTokens, userId);
+
+        const alpha = 0.25;
+        const beta = 0.35;
+        const gamma = 0.30;
+        const delta = 0.10;
+        const rawTid = (alpha * 1.0) + (beta * 1.0) + (gamma * goalRelevance) - (delta * noiseScore);
+        const initialTid = Math.max(0, Math.min(1.0, rawTid));
+
+        let newMem = await prisma.memory.create({
           data: {
             userId,
             content: message,
@@ -206,26 +185,23 @@ router.post("/chat", authenticateToken, validateRequest(chatSchema), async (req:
             embeddingJson: JSON.stringify(textEmbedding)
           }
         });
+
+        try {
+          const vectorString = `[${textEmbedding.join(",")}]`;
+          await prisma.$executeRawUnsafe(`
+            UPDATE "Memory"
+            SET embedding = '${vectorString}'::vector
+            WHERE id = '${newMem.id}'
+          `);
+        } catch (e) {
+          // Keep mock embedding Json
+        }
+
+        emitUserEvent(userId, "memory_updated");
+      } catch (err) {
+        console.error("[Background] Failed to persist memory engram:", err);
       }
-    }
-
-    emitUserEvent(userId, "memory_updated");
-    emitUserEvent(userId, "message_reply", {
-      sessionId: activeSessionId,
-      messages: [userMsg, assistantMsg]
-    });
-
-    res.json({
-      sessionId: activeSessionId,
-      reply: chatReply,
-      metrics: {
-        goalRelevance,
-        noiseScore,
-        initialTid,
-        metricReason
-      }
-    });
-
+    }, 0);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Chat session failure" });
   }
