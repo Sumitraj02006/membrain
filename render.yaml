@@ -11,11 +11,6 @@ services:
         value: 10000
       - key: DATABASE_URL
         sync: false
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: membrain-redis
-          property: connectionString
       - key: QWEN_API_KEY
         sync: false
       - key: QWEN_MODEL
@@ -24,7 +19,3 @@ services:
         value: text-embedding-v3
       - key: QWEN_BASE_URL
         value: https://ws-hkzugup48fw7o6hu.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1
-
-  - type: redis
-    name: membrain-redis
-    ipAllowList: []
