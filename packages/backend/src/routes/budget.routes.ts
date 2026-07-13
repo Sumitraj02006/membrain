@@ -12,7 +12,7 @@ const budgetSettingsSchema = z.object({
 
 const router = Router();
 
-// GET: Current budget status + ETA to overflow (Required in checklist)
+// Fetch the current token budget status and calculate dynamic remaining active chat time
 router.get("/status", authenticateToken, async (req: any, res: Response) => {
   try {
     const userId = req.user.id;
@@ -46,7 +46,7 @@ router.get("/status", authenticateToken, async (req: any, res: Response) => {
   }
 });
 
-// PUT: Set max budget parameters (Required in checklist)
+// Update token budget limits for the session
 router.put("/settings", authenticateToken, validateRequest(budgetSettingsSchema), async (req: any, res: Response) => {
   try {
     const userId = req.user.id;
@@ -72,7 +72,7 @@ router.put("/settings", authenticateToken, validateRequest(budgetSettingsSchema)
   }
 });
 
-// GET: Historical token usage timeline (Required in checklist)
+// Fetch token usage history logs for charting analytics
 router.get("/history", authenticateToken, async (req: any, res: Response) => {
   try {
     const userId = req.user.id;

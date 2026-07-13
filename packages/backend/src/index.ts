@@ -13,6 +13,13 @@ import budgetRoutes from "./routes/budget.routes.ts";
 // Load environment variables
 dotenv.config();
 
+// Verify and log secondary API processor status
+const geminiKey = process.env.GEMINI_API_KEY;
+if (geminiKey && geminiKey !== "your_gemini_api_key_here") {
+  console.log("[AI Gateway] Gemini API configured for auxiliary memory validation.");
+}
+
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 

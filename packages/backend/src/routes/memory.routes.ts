@@ -20,7 +20,7 @@ const searchSchema = z.object({
 
 const router = Router();
 
-// POST: Generate Embedding API endpoint (Required in checklist)
+// Generate vector embeddings for the provided text using the embedding model
 router.post("/embed", authenticateToken, validateRequest(embedSchema), async (req: Request, res: Response) => {
   try {
     const { text } = req.body;
@@ -31,7 +31,7 @@ router.post("/embed", authenticateToken, validateRequest(embedSchema), async (re
   }
 });
 
-// GET: Paginated Active Memories (Required in checklist)
+// Fetch active memory nodes with pagination support
 router.get("/", authenticateToken, async (req: any, res: Response) => {
   try {
     const userId = req.user.id;
@@ -63,7 +63,7 @@ router.get("/", authenticateToken, async (req: any, res: Response) => {
   }
 });
 
-// GET: Memory stats (Required in checklist)
+// Get current memory database usage statistics and average scores
 router.get("/stats", authenticateToken, async (req: any, res: Response) => {
   try {
     const userId = req.user.id;
@@ -95,7 +95,7 @@ router.get("/stats", authenticateToken, async (req: any, res: Response) => {
   }
 });
 
-// GET: Obituaries list (Required in checklist)
+// Fetch the list of archived obituaries for deleted memory nodes
 router.get("/obituaries", authenticateToken, async (req: any, res: Response) => {
   try {
     const userId = req.user.id;
@@ -119,7 +119,7 @@ router.get("/obituaries", authenticateToken, async (req: any, res: Response) => 
   }
 });
 
-// GET: Single Memory Node details (Required in checklist)
+// Fetch detailed logs and metadata for a single memory node
 router.get("/:id", authenticateToken, async (req: any, res: Response): Promise<any> => {
   try {
     const userId = req.user.id;
@@ -139,7 +139,7 @@ router.get("/:id", authenticateToken, async (req: any, res: Response): Promise<a
   }
 });
 
-// POST: Semantic Similarity Search (Required in checklist)
+// Perform semantic vector similarity search for memory nodes
 router.post("/search", authenticateToken, validateRequest(searchSchema), async (req: any, res: Response) => {
   try {
     const userId = req.user.id;
@@ -185,7 +185,7 @@ router.post("/search", authenticateToken, validateRequest(searchSchema), async (
   }
 });
 
-// DELETE: Manual delete memory node (Required in checklist)
+// Manually delete a memory node and mark it as deleted
 router.delete("/:id", authenticateToken, async (req: any, res: Response): Promise<any> => {
   try {
     const userId = req.user.id;

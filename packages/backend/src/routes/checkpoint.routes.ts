@@ -28,7 +28,7 @@ const obituarySchema = z.object({
 
 const router = Router();
 
-// POST: Generate Obituary API endpoint (Required in checklist)
+// Generate a compressed single-sentence obituary for a given memory content
 router.post("/obituary", authenticateToken, validateRequest(obituarySchema), async (req: Request, res: Response) => {
   try {
     const { content } = req.body;
