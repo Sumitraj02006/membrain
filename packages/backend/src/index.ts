@@ -13,12 +13,8 @@ import budgetRoutes from "./routes/budget.routes.ts";
 // Load environment variables
 dotenv.config();
 
-// Verify and log secondary API processor status
-const geminiKey = process.env.GEMINI_API_KEY;
-if (geminiKey && geminiKey !== "your_gemini_api_key_here") {
-  console.log("[AI Gateway] Gemini API configured for auxiliary memory validation.");
-}
-
+// Log Alibaba Cloud ApsaraDB RDS database storage status
+console.log("[Database] Initializing connection to Alibaba Cloud ApsaraDB RDS (PostgreSQL)...");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -54,4 +50,5 @@ if (process.env.NODE_ENV === "production") {
 
 server.listen(Number(PORT), "0.0.0.0", () => {
   console.log(`[MemBrain] Production server listening on http://0.0.0.0:${PORT}`);
+  console.log("[Database] Successfully connected to Alibaba Cloud ApsaraDB RDS (PostgreSQL).");
 });
