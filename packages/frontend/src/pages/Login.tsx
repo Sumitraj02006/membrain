@@ -128,6 +128,32 @@ export default function Login({ onToggleSignUp }: LoginProps) {
             </button>
           </form>
 
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-800/80"></div>
+            </div>
+            <div className="relative flex justify-center text-[10px] uppercase tracking-wider font-mono">
+              <span className="bg-slate-900 px-3 text-slate-500">Or Quick Access</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={async () => {
+              const email = "judge@membrain.ai";
+              const password = "judgepassword123";
+              const success = await login(email, password);
+              if (!success) {
+                await register(email, password);
+              }
+            }}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold tracking-wide text-indigo-200 bg-indigo-950/30 hover:bg-indigo-950/60 border border-indigo-500/20 hover:border-indigo-500/40 disabled:bg-slate-800 disabled:text-slate-500 shadow-md active:translate-y-px transition-all duration-150 outline-none select-none cursor-pointer"
+          >
+            <span>Demo Access for Judge</span>
+            <ShieldCheck className="w-4 h-4 text-indigo-400" />
+          </button>
+
           <div className="mt-8 pt-6 border-t border-slate-800/80 text-center text-xs">
             <span className="text-slate-500">New memory operator? </span>
             <button
