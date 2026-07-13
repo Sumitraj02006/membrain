@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import http from "http";
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
 import { initSocketIO } from "./socket/gateway.js";
 import authRoutes from "./routes/auth.routes.js";
 import agentRoutes from "./routes/agent.routes.ts";
@@ -31,7 +32,9 @@ initSocketIO(server);
 
 // Serve Frontend in Production mode
 if (process.env.NODE_ENV === "production") {
-  const distPath = path.join(process.cwd(), "../frontend/dist");
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const distPath = path.resolve(__dirname, "../../frontend/dist");
   app.use(express.static(distPath));
   app.get("*", (req, res) => {
     res.sendFile(path.join(distPath, "index.html"));

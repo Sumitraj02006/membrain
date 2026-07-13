@@ -21,5 +21,7 @@ export function getQwenClient(): OpenAI {
 }
 
 export function isQwenConfigured(): boolean {
-  return !!apiKey && apiKey !== "your_qwen_api_key_here";
+  return !!apiKey && 
+    apiKey !== "your_qwen_api_key_here" && 
+    apiKey !== "sk-ws-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z";
 }

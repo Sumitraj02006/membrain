@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: membrain
+    runtime: node
+    buildCommand: npm install && npx prisma generate --schema=packages/backend/prisma/schema.prisma && npm run build
+    startCommand: npx prisma db push --schema=packages/backend/prisma/schema.prisma --accept-data-loss && npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: membrain-redis
+          property: connectionString
+      - key: QWEN_API_KEY
+        sync: false
+      - key: QWEN_MODEL
+        value: qwen-max
+      - key: QWEN_EMBEDDING_MODEL
+        value: text-embedding-v3
+      - key: QWEN_BASE_URL
+        value: https://ws-hkzugup48fw7o6hu.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1
+
+  - type: redis
+    name: membrain-redis
+    ipAllowList: []
