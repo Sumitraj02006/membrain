@@ -14,6 +14,7 @@ interface AuthState {
   error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string) => Promise<boolean>;
+  loginOrCreate: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   checkMe: () => Promise<void>;
   clearError: () => void;
@@ -55,6 +56,39 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const errorMsg = err.response?.data?.error || "Registration failed. Email might be in use.";
       set({ error: errorMsg, isLoading: false, isAuthenticated: false });
       return false;
+    }
+  },
+
+  loginOrCreate: async (email, password) => {
+    set({ isLoading: true, error: null });
+    try {
+      // 1. Try to login
+      const response = await axios.post("/api/auth/login", { email, password });
+      const { token, user } = response.data;
+      
+      localStorage.setItem("membrain_token", token);
+      set({ token, user, isAuthenticated: true, isLoading: false, error: null });
+      return true;
+    } catch (err: any) {
+      // 2. If login fails with 401 (meaning user not found or invalid password), try to register
+      if (err.response?.status === 401) {
+        try {
+          const response = await axios.post("/api/auth/register", { email, password });
+          const { token, user } = response.data;
+          
+          localStorage.setItem("membrain_token", token);
+          set({ token, user, isAuthenticated: true, isLoading: false, error: null });
+          return true;
+        } catch (regErr: any) {
+          const errorMsg = regErr.response?.data?.error || "Demo registration failed.";
+          set({ error: errorMsg, isLoading: false, isAuthenticated: false });
+          return false;
+        }
+      } else {
+        const errorMsg = err.response?.data?.error || "Demo login failed.";
+        set({ error: errorMsg, isLoading: false, isAuthenticated: false });
+        return false;
+      }
     }
   },
 

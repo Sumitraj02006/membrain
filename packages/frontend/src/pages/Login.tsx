@@ -17,7 +17,7 @@ interface LoginProps {
 }
 
 export default function Login({ onToggleSignUp }: LoginProps) {
-  const { login, error, isLoading, clearError } = useAuthStore();
+  const { login, loginOrCreate, error, isLoading, clearError } = useAuthStore();
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginSchemaType>({
     resolver: zodResolver(loginSchema)
@@ -140,12 +140,7 @@ export default function Login({ onToggleSignUp }: LoginProps) {
           <button
             type="button"
             onClick={async () => {
-              const email = "judge@membrain.ai";
-              const password = "judgepassword123";
-              const success = await login(email, password);
-              if (!success) {
-                await register(email, password);
-              }
+              await loginOrCreate("judge@membrain.ai", "judgepassword123");
             }}
             disabled={isLoading}
             className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold tracking-wide text-indigo-200 bg-indigo-950/30 hover:bg-indigo-950/60 border border-indigo-500/20 hover:border-indigo-500/40 disabled:bg-slate-800 disabled:text-slate-500 shadow-md active:translate-y-px transition-all duration-150 outline-none select-none cursor-pointer"
