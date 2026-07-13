@@ -119,7 +119,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   fetchStats: async () => {
     set({ isLoadingStats: true });
     try {
-      const res = await axios.get("/api/dashboard/stats");
+      const res = await axios.get("/api/memory/stats");
       set({ stats: res.data, isLoadingStats: false });
     } catch (err) {
       console.error("Fetch stats error", err);
@@ -130,7 +130,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   fetchMemories: async (searchString = "") => {
     set({ isLoadingMemories: true });
     try {
-      const res = await axios.get(`/api/dashboard/memories?search=${encodeURIComponent(searchString)}`);
+      const res = await axios.get(`/api/memory?search=${encodeURIComponent(searchString)}`);
       set({ activeMemories: res.data, isLoadingMemories: false });
     } catch (err) {
       console.error("Fetch memories error", err);
@@ -140,7 +140,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
 
   fetchObituaries: async () => {
     try {
-      const res = await axios.get("/api/dashboard/obituaries");
+      const res = await axios.get("/api/memory/obituaries");
       set({ obituaries: res.data });
     } catch (err) {
       console.error("Fetch obituaries error", err);

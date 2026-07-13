@@ -31,33 +31,38 @@ router.post("/embed", authenticateToken, validateRequest(embedSchema), async (re
   }
 });
 
-// Fetch active memory nodes with pagination support
+// Fetch active memory nodes with pagination and search support
 router.get("/", authenticateToken, async (req: any, res: Response) => {
   try {
     const userId = req.user.id;
     const page = Math.max(1, Number(req.query.page) || 1);
-    const limit = Math.max(1, Number(req.query.limit) || 10);
+    const limit = Math.max(1, Number(req.query.limit) || 100);
     const skip = (page - 1) * limit;
+    const search = req.query.search ? String(req.query.search) : "";
+
+    const where: any = {
+      userId,
+      status: "ACTIVE"
+    };
+
+    if (search) {
+      where.content = {
+        contains: search,
+        mode: "insensitive"
+      };
+    }
 
     const [memories, total] = await Promise.all([
       prisma.memory.findMany({
-        where: { userId, status: "ACTIVE" },
+        where,
         skip,
         take: limit,
         orderBy: { tidScore: "desc" }
       }),
-      prisma.memory.count({ where: { userId, status: "ACTIVE" } })
+      prisma.memory.count({ where })
     ]);
 
-    res.json({
-      memories,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
-    });
+    res.json(memories); // Return plain array for compatibility with memoryStore.ts
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to retrieve memories" });
   }
